@@ -1,6 +1,6 @@
 # Host your own AI hub — a beginner copy-first guide
 
-**Status:** Published Oct 2026. Placeholders only, no secrets.  
+**Status:** Published Oct 2026. Placeholders only, no secrets. Includes `install.sh` one-command installer (new).  
 **What this is:** One always-on computer (a cheap VPS) that runs a private OpenAI-compatible gateway. Your scripts and bots call it over a private Tailscale network. The gateway buys answers by the token from hosted open models. Nothing sits on the public internet.
 
 Be the best copiers on the planet. The upstream projects already exist. Wire them carefully. Keep private data off it.
@@ -277,9 +277,24 @@ OpenRouter bills prepaid credits. Auto Recharge is optional in their dashboard (
 4. Put a billing alert on the droplet host (example: DigitalOcean billing alert around your infra envelope — we plan ~$30–40/mo infra).
 5. Optional: LiteLLM virtual keys with per-key budgets once Postgres is healthy (see LiteLLM key docs). Sum of key budgets should not exceed the credit you actually prepaid.
 
-Tonight-scale proof (measured on our box, non-private smoke/flood jobs only):
+**Realistic workload proof** (non-private drafts measured on our box — use these numbers in public):
 
 | Proof | Result |
+|---|---|
+| Job size | ~**3.3k** prompt tokens in / ~**0.6k** completion out |
+| Mix | ~**80%** small model / **20%** 70B |
+| Pass rate | **600/600 (100%)** across the full real run |
+| Tier C throughput | ~**80** jobs/min at concurrency 24 |
+| Cost / real job | ~**$0.00024** |
+| Cost / 1,000 real jobs | ~**$0.24** |
+| Realistic day (300 jobs) | ~**$0.07** in OpenRouter tokens |
+| Server / droplet | **separate** (planning mid-tier ~$24/mo class + backups) |
+
+**PROJECTION (not a promise):** if every day looked like that 300-job mix, token spend ≈ **~$2.20/mo**. Re-measure after your own offload. Droplet host is extra. Planning monthly band for the whole stack still ≈ **$20–45** light / **$50–75** mid (see §1).
+
+**Tiny test jobs only** (short prompts — throughput smoke, **not** draft pricing):
+
+| Smoke flood | Result |
 |---|---|
 | Flood at 64 concurrent | **1000/1000** jobs, **0%** failures |
 | Peak throughput | **571.7** jobs/min |
@@ -287,7 +302,7 @@ Tonight-scale proof (measured on our box, non-private smoke/flood jobs only):
 | Live check | answered in **0.43 s** |
 | RAM on a small 4 GB droplet | about **65%** |
 
-Earlier ramps on the same night: peak **358.2** jobs/min at concurrency 32, then **502.3** jobs/min at 64 on an 800-job wave — all 0% fail before the 1000-job run.
+Earlier short-prompt ramps the same night: peak **358.2** jobs/min at concurrency 32, then **502.3** jobs/min at 64 on an 800-job wave — all 0% fail. Do not quote those $/job figures as real draft cost.
 
 ---
 
