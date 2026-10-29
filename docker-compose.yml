@@ -1,0 +1,70 @@
+# Host-your-own AI hub — sanitized example (DRAFT for public guide)
+# Bind ports to your Tailscale IP only. Never 0.0.0.0.
+# Postgres stays on the internal Docker network (no host ports).
+# Fill .env locally (mode 600). Never commit secrets.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - litellm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d litellm -U litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hub_internal
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=postgresql://litellm:${POSTGRES_PASSWORD}@db:5432/litellm
+      - STORE_MODEL_IN_DB=True
+    volumes:
+      - ./litellm_config.example.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    ports:
+      - "${HUB_BIND_IP}:4000:4000"
+    restart: unless-stopped
+    networks:
+      - hub_internal
+      - default
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    depends_on:
+      - litellm
+    environment:
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - WEBUI_AUTH=true
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+    volumes:
+      - open-webui-data:/app/backend/data
+    ports:
+      - "${HUB_BIND_IP}:8080:8080"
+    restart: unless-stopped
+    networks:
+      - hub_internal
+      - default
+
+volumes:
+  open-webui-data:
+  litellm_pgdata:
+    name: litellm_postgres_data
+
+networks:
+  hub_internal:
+    driver: bridge

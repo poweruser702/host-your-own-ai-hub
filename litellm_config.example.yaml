@@ -1,0 +1,20 @@
+# Example LiteLLM config — public guide sample (no secrets)
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+# Upstream: https://github.com/BerriAI/litellm
+# License note: code outside enterprise/ is MIT; do NOT use enterprise/
+# features without a paid BerriAI license.
+# https://github.com/BerriAI/litellm/blob/main/LICENSE
+# https://github.com/BerriAI/litellm/blob/main/enterprise/LICENSE.md
+
+model_list:
+  - model_name: bulk-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: bulk-small
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.1-8b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
