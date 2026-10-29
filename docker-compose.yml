@@ -1,4 +1,4 @@
-# Host-your-own AI hub — sanitized example (DRAFT for public guide)
+# Host-your-own AI hub — sanitized example
 # Bind ports to your Tailscale IP only. Never 0.0.0.0.
 # Postgres stays on the internal Docker network (no host ports).
 # Fill .env locally (mode 600). Never commit secrets.
