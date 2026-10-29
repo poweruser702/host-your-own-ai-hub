@@ -2,6 +2,7 @@
 # Bind ports to your Tailscale IP only. Never 0.0.0.0.
 # Postgres stays on the internal Docker network (no host ports).
 # Fill .env locally (mode 600). Never commit secrets.
+# install.sh copies litellm_config.example.yaml → litellm_config.yaml
 
 services:
   db:
@@ -33,7 +34,7 @@ services:
       - DATABASE_URL=postgresql://litellm:${POSTGRES_PASSWORD}@db:5432/litellm
       - STORE_MODEL_IN_DB=True
     volumes:
-      - ./litellm_config.example.yaml:/app/config.yaml:ro
+      - ./litellm_config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     ports:
       - "${HUB_BIND_IP}:4000:4000"
@@ -56,6 +57,8 @@ services:
     ports:
       - "${HUB_BIND_IP}:8080:8080"
     restart: unless-stopped
+    profiles:
+      - webui
     networks:
       - hub_internal
       - default

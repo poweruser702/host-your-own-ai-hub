@@ -69,6 +69,69 @@ Day-one cash is mostly OpenRouter prepaid credit plus the droplet starting to ac
 
 ---
 
+## One-command install
+
+Prefer reading the script before you run it. `curl | bash` is convenient and also a trust decision — you are giving root to whatever that URL returns today.
+
+**Safer path (recommended):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/poweruser702/host-your-own-ai-hub/main/install.sh -o install.sh
+less install.sh
+sudo env TS_AUTHKEY=<YOUR_AUTHKEY> OPENROUTER_API_KEY=<YOUR_OPENROUTER_KEY> bash install.sh
+```
+
+One-liner (only after you have read `install.sh` once):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/poweruser702/host-your-own-ai-hub/main/install.sh | sudo env TS_AUTHKEY=<YOUR_AUTHKEY> OPENROUTER_API_KEY=<YOUR_OPENROUTER_KEY> bash
+```
+
+Optional UFW apply (explicit opt-in):
+
+```bash
+sudo env TS_AUTHKEY=<YOUR_AUTHKEY> OPENROUTER_API_KEY=<YOUR_OPENROUTER_KEY> bash install.sh --lockdown
+```
+
+Preview without changing the machine:
+
+```bash
+bash install.sh --dry-run
+```
+
+What it does (automated copy of the manual path below):
+
+1. Installs Docker Engine + Compose via Docker’s official convenience script ([get.docker.com](https://get.docker.com) / [Docker Ubuntu docs](https://docs.docker.com/engine/install/ubuntu/)).
+2. Installs Tailscale via its [official install script](https://tailscale.com/download/linux), then `tailscale up` with your `TS_AUTHKEY` (no default — env or prompt).
+3. Creates `/opt/ai-hub`, copies `docker-compose.yml`, and copies `litellm_config.example.yaml` → `litellm_config.yaml`.
+4. Writes a mode-`600` `.env` with generated `LITELLM_MASTER_KEY`, Postgres password, and salt (values are **not** printed — only the file path is).
+5. Binds LiteLLM to the Tailscale IPv4 from `tailscale ip -4` only — **never** `0.0.0.0`.
+6. Prints cloud-firewall / UFW advice; applies UFW only if you pass `--lockdown`.
+7. Runs a health check and one tiny test completion; prints `PASS` or `FAIL`.
+8. Safe to re-run (idempotent). Supports `--dry-run`.
+
+Uninstall (stops the stack; does not remove Docker or Tailscale):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/poweruser702/host-your-own-ai-hub/main/uninstall.sh -o uninstall.sh
+less uninstall.sh
+sudo bash uninstall.sh          # stop compose, keep /opt/ai-hub
+sudo bash uninstall.sh --purge  # also delete /opt/ai-hub + volumes
+```
+
+Honest notes:
+
+- **`curl | bash` risk:** the pipe skips your review. Download, `less`, then run.
+- **Root:** package installs need sudo. `--dry-run` does not.
+- **Secrets:** never commit `.env`. Rotate `TS_AUTHKEY` and OpenRouter keys if they leak.
+- **License / ToS:** still apply — LiteLLM MIT outside `enterprise/`; OpenRouter no-resale (§7.4); read §0 above before you spend.
+- **Privacy:** non-private bulk work only (see §9). This installer does not make the hub “private”.
+- **Optional UI:** default install starts `db` + `litellm`. Open WebUI is a Compose profile: `docker compose --profile webui up -d` inside `/opt/ai-hub`, or pass `--with-webui` to the installer.
+
+If you want to learn every knob, skip the installer and follow §3–§7 by hand.
+
+---
+
 ## 3. Create the droplet
 
 1. In DigitalOcean, create an Ubuntu 24.04 Droplet in a region near you.
@@ -135,7 +198,7 @@ systemctl enable --now docker
 On the droplet, create an app directory (example: `/opt/ai-hub`) and copy in:
 
 - `docker-compose.yml` (this folder — sanitized)
-- `litellm_config.example.yaml` (rename or mount as `/app/config.yaml`)
+- `litellm_config.example.yaml` copied to `litellm_config.yaml` (compose mounts that path)
 - `.env` with mode `600` (never commit)
 
 Example `.env` **names only** (generate your own values):
@@ -163,8 +226,10 @@ docker compose ps
 
 Files in this folder:
 
+- [`install.sh`](./install.sh) — one-command installer (§ One-command install)
+- [`uninstall.sh`](./uninstall.sh)
 - [`docker-compose.yml`](./docker-compose.yml)
-- [`litellm_config.example.yaml`](./litellm_config.example.yaml)
+- [`litellm_config.example.yaml`](./litellm_config.example.yaml) — copied to `litellm_config.yaml` by the installer
 
 ---
 
